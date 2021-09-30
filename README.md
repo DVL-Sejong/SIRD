@@ -9,7 +9,7 @@ We have preprocessed COVID-19 dataset of US, Italy, Chana, and India. The prepro
 - China: [JHU CSSE COVID-19 Dataset](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data), [link](https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/)
 - India: [COVID19-India API](https://github.com/covid19india/api), [link](https://api.covid19india.org/csv/latest/states.csv)
 
-Repository for reprocessing raw data is [here](https://github.com/DVL-Sejong/COVID_DataProcessor)
+Repository for preprocessing raw data is [here](https://github.com/DVL-Sejong/COVID_DataProcessor)
 
 
 ### SIRD
