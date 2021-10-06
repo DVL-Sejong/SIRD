@@ -11,6 +11,19 @@ RESULT_PATH = join(ROOT_PATH, 'results')
 SETTING_PATH = join(ROOT_PATH, 'settings')
 
 
+def load_dataset(case_name):
+    regions = load_population(case_name)
+    population_df = load_population(case_name)
+    infectious_period_df = load_infectious_period(case_name)
+    initial_dict = load_initial_dict(case_name)
+    sird_dict = load_sird_dict(case_name)
+
+    dataset = {'regions': regions, 'population': population_df,
+               'infectious_period': infectious_period_df,
+               'initial': initial_dict, 'sird': sird_dict}
+    return dataset
+
+
 def load_population(case_name):
     population_path = join(DATASET_PATH, case_name, 'population.csv')
     population_df = pd.read_csv(population_path, index_col='regions')
@@ -28,6 +41,7 @@ def load_regions(case_name):
     sird_regions = [split(elem)[1].split('.csv')[0] for elem in sird_path_list]
 
     regions = list(set(population_regions) & set(initial_regions) & set(sird_regions))
+    regions.sort()
     return regions
 
 
