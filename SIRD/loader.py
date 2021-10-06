@@ -1,6 +1,5 @@
 from SIRD.datatype import PredictInfo
 from SIRD.io import load_regions, load_dataset
-
 from datetime import datetime, timedelta
 
 
@@ -42,11 +41,8 @@ class DataLoader:
         r = self.sird_df.loc[sird_index[idx], 'recovered']
         d = self.sird_df.loc[sird_index[idx], 'deceased']
 
-        x = {'S': s, 'I': i, 'R': r, 'D': d}
-        y = {'S': self.sird_df.loc[sird_index[idx+1]:sird_index[idx+self.y_frames], 'susceptible'],
-             'I': self.sird_df.loc[sird_index[idx+1]:sird_index[idx+self.y_frames], 'infected'],
-             'R': self.sird_df.loc[sird_index[idx+1]:sird_index[idx+self.y_frames], 'recovered'],
-             'D': self.sird_df.loc[sird_index[idx+1]:sird_index[idx+self.y_frames], 'deceased']}
+        x = {'S': s, 'I': i, 'R': r, 'D': d, 'date': sird_index[idx]}
+        y = self.sird_df.loc[sird_index[idx+1]:sird_index[idx+self.y_frames], :]
         initial_values = {'population': population, 'infectious_period': infectious_period,
                           'r0': r0, 'mortality_rate': mortality_rate}
 

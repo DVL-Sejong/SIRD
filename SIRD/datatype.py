@@ -1,4 +1,3 @@
-from SIRD.util import get_date_format
 from dataclasses import dataclass, field
 from datetime import datetime, date
 
@@ -87,3 +86,21 @@ class PredictInfo:
     def get_hash(self):
         hash_key = hashlib.sha1(self.__repr__().encode()).hexdigest()[:6]
         return hash_key
+
+
+def get_date_format(date: str) -> str:
+    formats = ['%Y-%m-%d', '%y%m%d', '%m-%d-%Y']
+    for format in formats:
+        if validate(date, format):
+            return format
+
+    raise Exception(f'date {date} is not datetime type')
+
+
+def validate(date: str, format: str) -> bool:
+    try:
+        if date != datetime.strptime(date, format).strftime(format):
+            raise ValueError
+        return True
+    except ValueError:
+        return False
