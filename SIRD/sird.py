@@ -1,11 +1,14 @@
-from SIRD.datatype import PredictInfo
-from SIRD.io import load_regions, load_dataset, save_setting, save_results, save_region_result
+from SIRD.datatype import PredictInfo, Country, PreprocessInfo
+from SIRD.io import load_regions, load_dataset, load_links, load_initial_dict
+from SIRD.io import save_setting, save_results, save_region_result
 from SIRD.loader import DataLoader
 from scipy.integrate import solve_ivp
 from datetime import datetime, timedelta
 
 import pandas as pd
 import numpy as np
+
+from SIRD.util import get_predict_period_from_dataset
 
 
 class SIRD:
@@ -60,27 +63,39 @@ class SIRD:
 
 
 if __name__ == '__main__':
-    case_name = 'India'
-    sird_hash = 'badcfc'
-    dataset = load_dataset(case_name, sird_hash)
+    country = Country.ITALY
+    link_df = load_links(country)
 
-    predict_info = PredictInfo(y_frames=1, test_start='210401', test_end='210701')
+    pre_info = PreprocessInfo(country=country, start=link_df['start_date'], end=link_df['end_date'],
+                              increase=True, daily=True, remove_zero=True,
+                              smoothing=True, window=5, divide=False)
+
+    test_info = PreprocessInfo(country=country, start=link_df['start_date'], end=link_df['end_date'],
+                               increase=True, daily=True, remove_zero=True,
+                               smoothing=True, window=5, divide=False)
+
+    y_frames = 3
+    initial_dict = load_initial_dict(country, pre_info, test_info)
+    predict_dates = get_predict_period_from_dataset(pre_info, initial_dict, y_frames)
+    predict_info = PredictInfo(y_frames=y_frames, test_start=predict_dates[0], test_end=predict_dates[-1])
     save_setting(predict_info, 'predict_info')
 
-    regions = load_regions(case_name, sird_hash)
-    for region in regions:
+    dataset = load_dataset(country, pre_info, test_info)
+    result_hash = f'{pre_info.get_hash()}_{test_info.get_hash()}_{predict_info.get_hash()}'
+
+    for region in load_regions(country):
         print(region.upper())
         loader = DataLoader(predict_info, dataset, region)
 
         region_df = pd.DataFrame(columns=['susceptible', 'infected', 'recovered', 'deceased'])
         region_df.index.name = 'date'
 
-        for i in range(len(loader)):
-            print(f'{i}th dataset===============================')
-            x, y, initial_values = loader[i]
+        for loader_index in range(len(loader)):
+            print(f'{loader_index}th dataset===============================')
+            x, y, initial_values = loader[loader_index]
             model = SIRD(predict_info, initial_values)
             predict_df = model.predict(x)
             region_df = region_df.append(predict_df.iloc[0, :])
-            save_results(predict_info, case_name, i, region, predict_df)
+            save_results(country, result_hash, loader_index, region, predict_df)
 
-        save_region_result(case_name, sird_hash, predict_info, region, region_df)
+        save_region_result(country, result_hash, region, region_df)

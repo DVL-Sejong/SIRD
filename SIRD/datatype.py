@@ -1,7 +1,206 @@
+from SIRD.util import get_date_format
 from dataclasses import dataclass, field
 from datetime import datetime, date
+from enum import Enum
+from copy import copy
 
 import hashlib
+
+
+class Country(Enum):
+    INDIA = 0
+    ITALY = 1
+    US = 2
+
+
+class PreType(Enum):
+    PRE = 0
+    TEST = 1
+    SIRD = 2
+
+
+@dataclass
+class PreprocessInfo:
+    country: Country = None
+    _country: Country = field(init=False, repr=False)
+    start: datetime = None
+    _start: datetime = field(init=False, repr=False)
+    end: datetime = None
+    _end: datetime = field(init=False, repr=False)
+    increase: bool = None
+    _increase: bool = field(default=True)
+    daily: bool = None
+    _daily: bool = field(default=False)
+    remove_zero: bool = None
+    _remove_zero: bool = field(default=False)
+    smoothing: bool = None
+    _smoothing: bool = field(default=False)
+    window: int = None
+    _window: int = field(default=False)
+    divide: bool = None
+    _divide: bool = field(default=True)
+    pre_type: bool = None
+    _pre_type: bool = field(default=True)
+
+    def __init__(self, country, start, end,
+                 increase: bool, daily: bool, remove_zero: bool,
+                 smoothing: bool, window: int, divide: bool, pre_type: bool = PreType.SIRD):
+        self.country = country
+        self.start = start
+        self.end = end
+        self.increase = increase
+        self.daily = daily
+        self.remove_zero = remove_zero
+        self.smoothing = smoothing
+        self.window = window
+        self.divide = divide
+        self.pre_type = pre_type
+
+        self.check_valid()
+
+    def __repr__(self):
+        representation = f'PreprocessInfo(country: {self._country.name}, start: {self._start}, end: {self._end}, '
+        representation += f'increase: {self._increase}, daily: {self._daily}, remove_zero: {self._remove_zero}, '
+        representation += f'smoothing: {self._smoothing}, window: {self._window}, divide: {self._divide})'
+        return representation
+
+    @property
+    def country(self) -> Country:
+        return self._country
+
+    @country.setter
+    def country(self, country: Country):
+        self._country = country
+
+    @property
+    def start(self):
+        if hasattr(self, '_start'):
+            return self._start
+        else:
+            return None
+
+    def start_tostring(self, format: str = '%y%m%d'):
+        if hasattr(self, '_start'):
+            return self._start.strftime(format)
+        else:
+            return ''
+
+    @start.setter
+    def start(self, start):
+        if start is None:
+            self._start = datetime.now().date()
+
+        if isinstance(start, str):
+            format = get_date_format(start)
+            self._start = datetime.strptime(start, format).date()
+        elif isinstance(start, datetime):
+            self._start = start.date()
+        elif isinstance(start, date):
+            self._start = start
+
+    @property
+    def end(self):
+        if hasattr(self, '_end'):
+            return self._end
+        else:
+            return None
+
+    def end_tostring(self, format: str = '%y%m%d'):
+        if hasattr(self, '_end'):
+            return self._end.strftime(format)
+        else:
+            return ''
+
+    @end.setter
+    def end(self, end):
+        if end is None:
+            self._end = datetime.now().date()
+
+        if isinstance(end, str):
+            format = get_date_format(end)
+            self._end = datetime.strptime(end, format).date()
+        elif isinstance(end, datetime):
+            self._end = end.date()
+        elif isinstance(end, date):
+            self._end = end
+
+    @property
+    def increase(self) -> bool:
+        return self._increase
+
+    @increase.setter
+    def increase(self, increase: bool):
+        self._increase = increase
+
+    @property
+    def daily(self) -> bool:
+        return self._daily
+
+    @daily.setter
+    def daily(self, daily: bool):
+        self._daily = daily
+
+    @property
+    def remove_zero(self) -> bool:
+        return self._remove_zero
+
+    @remove_zero.setter
+    def remove_zero(self, remove_zero: bool):
+        self._remove_zero = remove_zero
+
+    @property
+    def smoothing(self) -> bool:
+        return self._smoothing
+
+    @smoothing.setter
+    def smoothing(self, smoothing: bool):
+        self._smoothing = smoothing
+
+    @property
+    def window(self) -> int:
+       return self._window
+
+    @window.setter
+    def window(self, window: int):
+        self._window = window
+
+    @property
+    def divide(self) -> bool:
+        return self._divide
+
+    @divide.setter
+    def divide(self, divide: bool):
+        self._divide = divide
+
+    def get_hash(self):
+        hash_key = hashlib.sha1(self.__repr__().encode()).hexdigest()[:6]
+        return hash_key
+
+    def check_valid(self):
+        if self.daily is False and self.remove_zero is True:
+            self.remove_zero = False
+            print(f'remove_zero cannot be implemented when daily is set to False.', end=' ')
+            print(f'remove_zero value is changed to False')
+
+        if self.smoothing is False and self.window != 0:
+            self.window = 0
+            print(f'window cannot bigger than 0 if smoothing is set to False.', end=' ')
+            print(f'window value is changed to 0')
+
+        if self.smoothing is True:
+            if self.window <= 0:
+                raise ValueError(f'window has to bigger than 0, {self.window}')
+            elif self.window % 2 == 0:
+                raise ValueError(f'window value has to be odd, {self.window}')
+
+        if self.pre_type is PreType.TEST and self.divide is True:
+            raise ValueError(f'divide cannot be True for test number dataset!')
+
+    def get_sird_info(self):
+        sird_info = copy(self)
+        sird_info.pre_type = PreType.SIRD
+        sird_info.divide = True
+        return sird_info
 
 
 @dataclass
@@ -88,19 +287,8 @@ class PredictInfo:
         return hash_key
 
 
-def get_date_format(date: str) -> str:
-    formats = ['%Y-%m-%d', '%y%m%d', '%m-%d-%Y']
-    for format in formats:
-        if validate(date, format):
-            return format
-
-    raise Exception(f'date {date} is not datetime type')
-
-
-def validate(date: str, format: str) -> bool:
-    try:
-        if date != datetime.strptime(date, format).strftime(format):
-            raise ValueError
-        return True
-    except ValueError:
-        return False
+def get_country_name(country):
+    if country == Country.US:
+        return country.name
+    else:
+        return country.name.capitalize()
