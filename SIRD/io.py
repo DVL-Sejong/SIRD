@@ -11,12 +11,12 @@ RESULT_PATH = join(ROOT_PATH, 'results')
 SETTING_PATH = join(ROOT_PATH, 'settings')
 
 
-def load_dataset(case_name):
+def load_dataset(case_name, sird_hash):
     regions = load_population(case_name)
     population_df = load_population(case_name)
     infectious_period_df = load_infectious_period(case_name)
-    initial_dict = load_initial_dict(case_name)
-    sird_dict = load_sird_dict(case_name)
+    initial_dict = load_initial_dict(case_name, sird_hash)
+    sird_dict = load_sird_dict(case_name, sird_hash)
 
     dataset = {'regions': regions, 'population': population_df,
                'infectious_period': infectious_period_df,
@@ -30,14 +30,14 @@ def load_population(case_name):
     return population_df
 
 
-def load_regions(case_name):
+def load_regions(case_name, sird_hash):
     population_df = load_population(case_name)
     population_regions = population_df.index.tolist()
 
-    initial_values_path_list = glob(join(DATASET_PATH, case_name, 'initial_values', '*.csv'))
+    initial_values_path_list = glob(join(DATASET_PATH, case_name, 'initial_values', sird_hash, '*.csv'))
     initial_regions = [split(elem)[1].split('.csv')[0] for elem in initial_values_path_list]
 
-    sird_path_list = glob(join(DATASET_PATH, case_name, 'sird_data', '*.csv'))
+    sird_path_list = glob(join(DATASET_PATH, case_name, 'sird', sird_hash, '*.csv'))
     sird_regions = [split(elem)[1].split('.csv')[0] for elem in sird_path_list]
 
     regions = list(set(population_regions) & set(initial_regions) & set(sird_regions))
@@ -45,36 +45,36 @@ def load_regions(case_name):
     return regions
 
 
-def load_sird_dict(case_name):
-    regions = load_regions(case_name)
+def load_sird_dict(case_name, sird_hash):
+    regions = load_regions(case_name, sird_hash)
     sird_dict = dict()
 
     for region in regions:
-        sird_df = load_sird_data(case_name, region)
+        sird_df = load_sird_data(case_name, region, sird_hash)
         sird_dict.update({region: sird_df})
 
     return sird_dict
 
 
-def load_sird_data(case_name, region):
-    sird_path = join(DATASET_PATH, case_name, 'sird_data', f'{region}.csv')
+def load_sird_data(case_name, region, sird_hash):
+    sird_path = join(DATASET_PATH, case_name, 'sird', sird_hash, f'{region}.csv')
     sird_df = pd.read_csv(sird_path, index_col='date')
     return sird_df
 
 
-def load_initial_dict(case_name):
-    regions = load_regions(case_name)
+def load_initial_dict(case_name, sird_hash):
+    regions = load_regions(case_name, sird_hash)
     initial_dict = dict()
 
     for region in regions:
-        initial_df = load_initial_data(case_name, region)
+        initial_df = load_initial_data(case_name, region, sird_hash)
         initial_dict.update({region: initial_df})
 
     return initial_dict
 
 
-def load_initial_data(case_name, region):
-    sird_path = join(DATASET_PATH, case_name, 'initial_values', f'{region}.csv')
+def load_initial_data(case_name, region, sird_hash):
+    sird_path = join(DATASET_PATH, case_name, 'initial_values', sird_hash, f'{region}.csv')
     sird_df = pd.read_csv(sird_path, index_col='date')
     return sird_df
 
@@ -95,6 +95,13 @@ def save_results(predict_info, case_name, index, region, result_df):
     result_path = get_result_path(predict_info, case_name, index)
     result_df.to_csv(join(result_path, f'{region}.csv'))
     print(f'saving {region} results under {result_path}')
+
+
+def save_region_result(case_name, sird_hash, predict_info, region, region_df):
+    result_path = join(RESULT_PATH, case_name, f'{sird_hash}_{predict_info.get_hash()}')
+    Path(result_path).mkdir(parents=True, exist_ok=True)
+    saving_path = join(result_path, f'{region}.csv')
+    region_df.to_csv(saving_path)
 
 
 def save_setting(param_class, class_name):

@@ -1,5 +1,5 @@
 from SIRD.datatype import PredictInfo
-from SIRD.io import load_regions, load_dataset, save_setting, save_results
+from SIRD.io import load_regions, load_dataset, save_setting, save_results, save_region_result
 from SIRD.loader import DataLoader
 from scipy.integrate import solve_ivp
 from datetime import datetime, timedelta
@@ -60,20 +60,27 @@ class SIRD:
 
 
 if __name__ == '__main__':
-    case_name = 'US'
-    dataset = load_dataset(case_name)
+    case_name = 'India'
+    sird_hash = 'badcfc'
+    dataset = load_dataset(case_name, sird_hash)
 
-    predict_info = PredictInfo(y_frames=3, test_start='210101', test_end='210111')
+    predict_info = PredictInfo(y_frames=1, test_start='210401', test_end='210701')
     save_setting(predict_info, 'predict_info')
 
-    regions = load_regions(case_name)
+    regions = load_regions(case_name, sird_hash)
     for region in regions:
         print(region.upper())
         loader = DataLoader(predict_info, dataset, region)
+
+        region_df = pd.DataFrame(columns=['susceptible', 'infected', 'recovered', 'deceased'])
+        region_df.index.name = 'date'
 
         for i in range(len(loader)):
             print(f'{i}th dataset===============================')
             x, y, initial_values = loader[i]
             model = SIRD(predict_info, initial_values)
             predict_df = model.predict(x)
+            region_df = region_df.append(predict_df.iloc[0, :])
             save_results(predict_info, case_name, i, region, predict_df)
+
+        save_region_result(case_name, sird_hash, predict_info, region, region_df)
