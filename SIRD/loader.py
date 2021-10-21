@@ -51,7 +51,7 @@ if __name__ == '__main__':
                               smoothing=True, window=5, divide=False)
 
     test_info = PreprocessInfo(country=country, start=link_df['start_date'], end=link_df['end_date'],
-                               increase=True, daily=True, remove_zero=True,
+                               increase=False, daily=True, remove_zero=True,
                                smoothing=True, window=5, divide=False)
 
     y_frames = 3
