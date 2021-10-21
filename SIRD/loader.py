@@ -1,6 +1,7 @@
-from SIRD.datatype import PredictInfo
-from SIRD.io import load_regions, load_dataset
-from datetime import datetime, timedelta
+from SIRD.datatype import PredictInfo, Country, PreprocessInfo
+from SIRD.util import get_period, get_predict_period_from_dataset
+from SIRD.io import load_regions, load_dataset, load_links, load_initial_dict
+from datetime import timedelta
 
 
 class DataLoader:
@@ -8,54 +9,59 @@ class DataLoader:
         self.predict_info = predict_info
         self.test_start = predict_info.test_start
         self.test_end = predict_info.test_end
+        self.test_period = get_period(self.test_start, self.test_end)
         self.y_frames = predict_info.y_frames
 
         self.population = dataset['population'].loc[region, 'population']
         self.infectious_period = dataset['infectious_period'].loc[region, 'infectious_period']
-        self.initiate(dataset, region)
+        self.initial_data = dataset['initial'][region]
+        self.sird_df = dataset['sird'][region]
 
         self.region = region
 
-    def initiate(self, dataset, region):
-        self.start = (self.test_start + timedelta(days=-1)).strftime('%Y-%m-%d')
-        self.end = (self.test_end + timedelta(days=self.y_frames-1)).strftime('%Y-%m-%d')
-
-        self.r0_values = dataset['initial'][region].loc[self.start:self.end, 'r0']
-        self.mortality_rates = dataset['initial'][region].loc[self.start:self.end, 'mortality_rate']
-        self.sird_df = dataset['sird'][region].loc[self.start:self.end, :]
-
-        self.len = (datetime.strptime(self.end, '%Y-%m-%d') - datetime.strptime(self.start, '%Y-%m-%d')).days + 1
-
     def __len__(self):
-        return (self.test_end - self.test_start).days + 1
+        return len(self.test_period)
 
     def __getitem__(self, idx):
-        population = self.population
-        infectious_period = self.infectious_period
-        r0 = self.r0_values.iloc[idx]
-        mortality_rate = self.mortality_rates.iloc[idx]
+        index_date = (self.test_period[idx] + timedelta(days=-1)).strftime('%Y-%m-%d')
+        y_period = get_period(self.test_period[idx],
+                              self.test_period[idx] + timedelta(days=self.y_frames-1), '%Y-%m-%d')
 
-        sird_index = self.sird_df.index.tolist()
-        s = self.sird_df.loc[sird_index[idx], 'susceptible']
-        i = self.sird_df.loc[sird_index[idx], 'infected']
-        r = self.sird_df.loc[sird_index[idx], 'recovered']
-        d = self.sird_df.loc[sird_index[idx], 'deceased']
+        s = self.sird_df.loc[index_date, 'susceptible']
+        i = self.sird_df.loc[index_date, 'infected']
+        r = self.sird_df.loc[index_date, 'recovered']
+        d = self.sird_df.loc[index_date, 'deceased']
 
-        x = {'S': s, 'I': i, 'R': r, 'D': d, 'date': sird_index[idx]}
-        y = self.sird_df.loc[sird_index[idx+1]:sird_index[idx+self.y_frames], :]
-        initial_values = {'population': population, 'infectious_period': infectious_period,
-                          'r0': r0, 'mortality_rate': mortality_rate}
+        x = {'S': s, 'I': i, 'R': r, 'D': d, 'date': index_date}
+        y = self.sird_df.loc[y_period, :]
+        initial_values = {'population': self.population,
+                          'infectious_period': self.infectious_period,
+                          'r0': self.initial_data.loc[index_date, 'r0'],
+                          'mortality_rate': self.initial_data.loc[index_date, 'mortality_rate']}
 
         return x, y, initial_values
 
 
 if __name__ == '__main__':
-    case_name = 'US'
-    predict_info = PredictInfo(y_frames=3, test_start='210101', test_end='210108')
-    dataset = load_dataset(case_name)
-    regions = load_regions(case_name)
+    country = Country.ITALY
+    link_df = load_links(country)
 
-    loader = DataLoader(predict_info, dataset, regions[0])
+    pre_info = PreprocessInfo(country=country, start=link_df['start_date'], end=link_df['end_date'],
+                              increase=True, daily=True, remove_zero=True,
+                              smoothing=True, window=5, divide=False)
+
+    test_info = PreprocessInfo(country=country, start=link_df['start_date'], end=link_df['end_date'],
+                               increase=False, daily=True, remove_zero=True,
+                               smoothing=True, window=5, divide=False)
+
+    y_frames = 3
+    initial_dict = load_initial_dict(country, pre_info, test_info)
+    predict_dates = get_predict_period_from_dataset(pre_info, initial_dict, y_frames)
+    predict_info = PredictInfo(y_frames=y_frames, test_start=predict_dates[0], test_end=predict_dates[-1])
+
+    dataset = load_dataset(country, pre_info, test_info)
+    loader = DataLoader(predict_info, dataset, load_regions(country)[0])
+
     print(loader[0])
     print()
     print(loader[1])
