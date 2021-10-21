@@ -1,5 +1,7 @@
 from datetime import date, datetime, timedelta
 
+import pandas as pd
+
 
 def get_period(start_date, end_date, out_date_format=None):
     if type(start_date) == str:
@@ -64,3 +66,9 @@ def get_predict_period_from_dataset(pre_info, initial_dict, y_frames):
 
     predict_dates = get_common_dates(initial_dates, pre_dates)[1:-y_frames + 1]
     return predict_dates
+
+
+def generate_dataframe(index, columns, index_name):
+    df = pd.DataFrame(index=index, columns=columns)
+    df.index.name = index_name
+    return df

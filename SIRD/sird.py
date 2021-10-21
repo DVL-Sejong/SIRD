@@ -1,6 +1,6 @@
 from SIRD.datatype import PredictInfo, Country, PreprocessInfo
 from SIRD.io import load_regions, load_dataset, load_links, load_initial_dict
-from SIRD.io import save_setting, save_results, save_region_result
+from SIRD.io import save_setting, save_region_result, save_result_dict
 from SIRD.loader import DataLoader
 from scipy.integrate import solve_ivp
 from datetime import datetime, timedelta
@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
-from SIRD.util import get_predict_period_from_dataset
+from SIRD.util import get_predict_period_from_dataset, generate_dataframe
 
 
 class SIRD:
@@ -83,19 +83,21 @@ if __name__ == '__main__':
     dataset = load_dataset(country, pre_info, test_info)
     result_hash = f'{pre_info.get_hash()}_{test_info.get_hash()}_{predict_info.get_hash()}'
 
+    result_dict = dict()
     for region in load_regions(country):
-        print(region.upper())
+        print(f'Predict {region.upper()}')
         loader = DataLoader(predict_info, dataset, region)
+        region_df = generate_dataframe([], ['susceptible', 'infected', 'recovered', 'deceased'], 'date')
 
-        region_df = pd.DataFrame(columns=['susceptible', 'infected', 'recovered', 'deceased'])
-        region_df.index.name = 'date'
-
+        day_dict = dict()
         for loader_index in range(len(loader)):
-            print(f'{loader_index}th dataset===============================')
             x, y, initial_values = loader[loader_index]
             model = SIRD(predict_info, initial_values)
             predict_df = model.predict(x)
+            day_dict.update({str(loader_index).zfill(4): predict_df})
             region_df = region_df.append(predict_df.iloc[0, :])
-            save_results(country, result_hash, loader_index, region, predict_df)
 
+        result_dict.update({region: day_dict})
         save_region_result(country, result_hash, region, region_df)
+
+    save_result_dict(country, result_hash, result_dict)

@@ -5,6 +5,7 @@ from pathlib import Path
 from glob import glob
 
 import pandas as pd
+import pickle
 
 
 ROOT_PATH = Path(abspath(dirname(__file__))).parent
@@ -79,17 +80,13 @@ def load_infectious_period(country):
     return infectious_period_df
 
 
-def get_result_path(country, result_hash, region, index):
-    result_path = join(RESULT_PATH, get_country_name(country), result_hash,
-                       region, str(index).zfill(4))
+def save_result_dict(country, result_hash, result_dict):
+    result_path = join(RESULT_PATH, get_country_name(country), result_hash)
     Path(result_path).mkdir(parents=True, exist_ok=True)
-    return result_path
-
-
-def save_results(country, result_hash, loader_index, region, result_df):
-    result_path = get_result_path(country, result_hash, region, loader_index)
-    result_df.to_csv(join(result_path, f'{region}.csv'))
-    print(f'saving {region} results under {result_path}')
+    saving_path = join(result_path, 'result.pickle')
+    with open(saving_path, 'wb') as handle:
+        pickle.dump(result_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f'saving SIRD predict result to {saving_path}')
 
 
 def save_region_result(country, result_hash, region, region_df):
