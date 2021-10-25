@@ -207,7 +207,9 @@ class PreprocessInfo:
 
 
 @dataclass
-class PredictInfo:
+class DatasetInfo:
+    x_frames: int = None
+    _x_frames: int = field(default=False)
     y_frames: int = None
     _y_frames: int = field(default=False)
     test_start: datetime = None
@@ -215,15 +217,24 @@ class PredictInfo:
     test_end: datetime = None
     _test_end: datetime = field(init=False, repr=False)
 
-    def __init__(self, y_frames: int, test_start=None, test_end=None):
+    def __init__(self, x_frames: int, y_frames: int, test_start=None, test_end=None):
+        self.x_frames = x_frames
         self.y_frames = y_frames
         self.test_start = test_start
         self.test_end = test_end
 
     def __repr__(self):
-        representation = f'DatasetInfo(y_frames: {self._y_frames}, '
+        representation = f'DatasetInfo(x_frames: {self._x_frames}, y_frames: {self._y_frames}, '
         representation += f'test_start: {self._test_start}, test_end: {self._test_end})'
         return representation
+
+    @property
+    def x_frames(self) -> int:
+        return self._x_frames
+
+    @x_frames.setter
+    def x_frames(self, x_frames: int):
+        self._x_frames = x_frames
 
     @property
     def y_frames(self) -> int:

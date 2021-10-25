@@ -1,6 +1,6 @@
-from SIRD.datatype import PredictInfo, Country, PreprocessInfo
+from SIRD.datatype import DatasetInfo, Country, PreprocessInfo
 from SIRD.util import get_period, get_predict_period_from_dataset
-from SIRD.io import load_regions, load_dataset, load_links, load_initial_dict
+from SIRD.io import load_regions, load_dataset, load_links, load_initial_dict, save_setting
 from datetime import timedelta
 
 
@@ -57,7 +57,9 @@ if __name__ == '__main__':
     y_frames = 3
     initial_dict = load_initial_dict(country, pre_info, test_info)
     predict_dates = get_predict_period_from_dataset(pre_info, initial_dict, y_frames)
-    predict_info = PredictInfo(y_frames=y_frames, test_start=predict_dates[0], test_end=predict_dates[-1])
+    predict_info = DatasetInfo(x_frames=0, y_frames=y_frames,
+                               test_start=predict_dates[0], test_end=predict_dates[-1])
+    save_setting(predict_info, 'data_info')
 
     dataset = load_dataset(country, pre_info, test_info)
     loader = DataLoader(predict_info, dataset, load_regions(country)[0])
