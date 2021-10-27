@@ -1,29 +1,43 @@
 # SIRD
 Susceptible-Infectious-Recovered-Deceased model (SIRD) 
 
+
+
 ### Dataset
 
-We have preprocessed COVID-19 dataset of US, Italy, Chana, and India. The preprocessed dataset is committed on [here](dataset/). Raw dataset of each country can be found here: 
-- US: [JHU CSSE COVID-19 Dataset](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data), [link](https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports_us/)
-- Italy: [Dati COVID-19 Italia](https://github.com/pcm-dpc/COVID-19), [link](https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv)
-- China: [JHU CSSE COVID-19 Dataset](https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data), [link](https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/)
-- India: [COVID19-India API](https://github.com/covid19india/api), [link](https://api.covid19india.org/csv/latest/states.csv)
+Dataset for this repository can be downloaded [here](https://github.com/DVL-Sejong/COVID_DataProcessor). You must download data and preprocess the data for the model. Dataset for the model should be under `\dataset\country_name`.
 
-Repository for preprocessing raw data is [here](https://github.com/DVL-Sejong/COVID_DataProcessor)
+
 
 
 ### SIRD
 
-to be updated
+```
+$ git clone https://github.com/DVL-Sejong/SIRD.git
+$ cd SIRD
+$ python main.py
+```
+
+- Arguments
+  - country: Italy, India, US, China are available
+  - y_frames: Number of y frames for generating dataset
+
+
+
+### Citation
 
 
 Algorithm for optimizing r0 value is based on this paper:
 
 ```
-@techreport{fernandez2020estimating,
-  title={Estimating and simulating a SIRD model of COVID-19 for many countries, states, and cities},
-  author={Fern{\'a}ndez-Villaverde, Jes{\'u}s and Jones, Charles I},
+@article{zhou2020preliminary,
+  title={Preliminary prediction of the basic reproduction number of the Wuhan novel coronavirus 2019-nCoV},
+  author={Zhou, Tao and Liu, Quanhui and Yang, Zimo and Liao, Jingyi and Yang, Kexin and Bai, Wei and Lu, Xin and Zhang, Wei},
+  journal={Journal of Evidence-Based Medicine},
+  volume={13},
+  number={1},
+  pages={3--7},
   year={2020},
-  institution={National Bureau of Economic Research}
+  publisher={Wiley Online Library}
 }
 ```
